@@ -509,6 +509,10 @@ internal static partial class NativeUIProbe
         };
         // Standard ranked and Standard Casual are playable (GameUtils.IsFormatPlayable); Wild stays visible but disabled.
         features.Games.Tournament = true; features.Games.Casual = true; features.Games.RankedStandard = true; features.Games.RankedWild = false;
+#if FULL_COLLECTION
+        // The native selector reads this flag. PrepareLocalMatch still rejects battles in collection mode.
+        features.Games.RankedWild = FullCollectionCatalog.Ready;
+#endif
         features.Collection.Manager = true; features.Collection.Crafting = CraftingLedgerRegistry.Current != null;
         // Upgrades consume Normal copies through the same atomic crafting ledger.
         features.EnableUpgradeToGolden = CraftingLedgerRegistry.Current != null;
@@ -588,6 +592,10 @@ internal static partial class NativeUIProbe
     {
         get
         {
+
+#if FULL_COLLECTION
+            if (FullCollectionCatalog.Ready) return false;
+#endif
             if (auditingEffective && !auditingOriginal) return true;
             if (!active || auditingOriginal || !SceneMgr.IsInitialized() || LocalLadder.Screen == "Starting" || LocalLadder.Screen == "Playing") return false;
             var mode = SceneMgr.Get().GetMode();
@@ -599,6 +607,10 @@ internal static partial class NativeUIProbe
     {
         get
         {
+
+#if FULL_COLLECTION
+            if (FullCollectionCatalog.Ready) return false;
+#endif
             if (auditingEffective && !auditingOriginal) return true;
             if (!active || auditingOriginal || !SceneMgr.IsInitialized()) return false;
             return NativeUIProjection.DefinitionContext(true, false, true, PreviewStatsContext, LocalLadder.Screen);
@@ -969,6 +981,10 @@ internal static partial class NativeUIProbe
     private static void AddSupportedDisplayableSets(CollectionManager manager, Dictionary<string, int> owned)
     {
         var displayable = manager.GetDisplayableCardSets();
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready) { displayable.Clear(); displayable.AddRange(FullCollectionCatalog.Sets.OrderBy(s=>s).Select(s=>(TAG_CARD_SET)s)); return; }
+#endif
+
         var supportedIds = NativeUIProjection.Supported.Concat(Profile.OwnedCards.Where(card => card.Count > 0
             && NativeUIProjection.IsNativeCollectible(card.Id, Profile)).Select(card => card.Id)).Distinct().OrderBy(id => id).ToArray();
         var supportedSets = supportedIds.Select(id => DefLoader.Get().GetEntityDef(id).GetCardSet());

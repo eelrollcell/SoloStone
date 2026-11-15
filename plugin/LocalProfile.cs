@@ -170,6 +170,10 @@ public sealed class LocalCardCount
 
 public sealed class LocalCustomDeck : LocalDeckCardContainer
 {
+
+#if FULL_COLLECTION
+    public int CollectionFormat = 2;
+#endif
     public string SourceRecipeId;
     public long Id;
     public long SortOrder;
@@ -1329,6 +1333,10 @@ public sealed partial class LocalProfile : IDisposable
     /// <summary>Owned copies of one version; the default and Collection remain Normal-only.</summary>
     public int OwnedCount(string id, int premium = 0)
     {
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Contains(id)) return FullCollectionCatalog.Count(id, premium);
+#endif
+
         if (premium < 0 || premium > 3) throw new ArgumentOutOfRangeException(nameof(premium));
         if (premium == 0) return id != null && Collection.TryGetValue(id, out int normal) ? normal : 0;
         if (!LocalClassRewards.IsAvailable(id)) return 0;
@@ -1369,6 +1377,10 @@ public sealed partial class LocalProfile : IDisposable
                     else { row.Count = Math.Max(row.Count, floor.Count); row.Acquired = Math.Max(row.Acquired, floor.Acquired); }
                 }
             }
+
+#if FULL_COLLECTION
+            if (FullCollectionCatalog.Ready) return CollectionList(Collection).Concat(premium).Where(c => !FullCollectionCatalog.Contains(c.Id)).Concat(FullCollectionCatalog.Owned).ToArray();
+#endif
             return CollectionList(Collection).Concat(premium).ToArray();
         }
     }
@@ -1405,6 +1417,10 @@ public sealed partial class LocalProfile : IDisposable
     {
         var normal = OwnedCollection(profile);
         var premium = profile.PremiumCollection.ToDictionary(row => PremiumKey(row.Id, row.Premium), row => row.Count, StringComparer.Ordinal);
+
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready) return (id, version) => FullCollectionCatalog.Contains(id) ? FullCollectionCatalog.Count(id, version) : version == 0 ? (normal.TryGetValue(id, out int n) ? n : 0) : (premium.TryGetValue(PremiumKey(id, version), out int p) ? p : 0);
+#endif
         return (id, version) => version == 0 ? (normal.TryGetValue(id, out int count) ? count : 0)
             : !LocalClassRewards.IsAvailable(id) ? 0
             : Math.Max(premium.TryGetValue(PremiumKey(id, version), out int stored) ? stored : 0,
@@ -1429,6 +1445,14 @@ public sealed partial class LocalProfile : IDisposable
         foreach (string line in lines) { try { DeckRepairLog?.Invoke(line); } catch { } }
     }
 
+
+#if FULL_COLLECTION
+    public void SetCollectionFormat(long id, int format) {
+        if (format != 1 && format != 2) throw new ArgumentOutOfRangeException(nameof(format));
+        if (GetDraft(id)?.CollectionFormat == format) return;
+        var next = Snapshot(); next.CustomDecks.Single(d => d.Id == id).CollectionFormat = format; Commit(next);
+    }
+#endif
     public int MissingDeckSlotCount(long id)
     {
         var deck = data.CustomDecks.SingleOrDefault(row => row.Id == id);
@@ -1726,6 +1750,9 @@ public sealed partial class LocalProfile : IDisposable
         foreach (var card in profile.CoreGrants)
             if (!availableOnly || LocalCoreProgression.IsAvailable(card.Id))
                 owned[card.Id] = card.Count;
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready) foreach (var id in FullCollectionCatalog.Cards.Keys) owned[id] = FullCollectionCatalog.Count(id, 0);
+#endif
         return owned;
     }
 
@@ -2495,6 +2522,10 @@ public sealed partial class LocalProfile : IDisposable
     private static LocalCardCount Copy(LocalCardCount entry) => new LocalCardCount { Id = entry.Id, Premium = entry.Premium, Count = entry.Count, Acquired = entry.Acquired };
     private static LocalCustomDeck Copy(LocalCustomDeck deck) => deck == null ? null : new LocalCustomDeck {
         Id = deck.Id, SortOrder = deck.SortOrder, Name = deck.Name, Hero = deck.Hero, SourceRecipeId = deck.SourceRecipeId,
+#if FULL_COLLECTION
+        CollectionFormat = deck.CollectionFormat,
+#endif
+
         Coin = deck.Coin, RandomCoinUseFavorite = deck.RandomCoinUseFavorite,
         CardBack = deck.CardBack, RandomCardBack = deck.RandomCardBack, HeroSkin = deck.HeroSkin, RandomHeroUseFavorite = deck.RandomHeroUseFavorite,
         PetFamily = deck.PetFamily, PetForm = deck.PetForm, RandomPetUseFavorite = deck.RandomPetUseFavorite,

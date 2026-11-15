@@ -94,6 +94,10 @@ internal static partial class NativeUIProbe
             profile.SaveDraftCosmetics(working.ID, working.Name, NativeDeckCosmetics(profile, working));
         else NativeUIProjection.SaveNativeDraft(profile, working.ID, working.Name, hero, entries,
             boards, persisted.SortOrder, NativeDeckCosmetics(profile, working));
+
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready) profile.SetCollectionFormat(working.ID, (int)working.FormatType);
+#endif
         return profile.GetDraft(working.ID);
     }
 
@@ -146,7 +150,11 @@ internal static partial class NativeUIProbe
             ID = id, Name = name, Hero = cosmetics?.HeroSkin ?? deck.Hero, HeroPower = deck.Hero + "bp",
             HeroOverridden = cosmetics?.HeroSkin != null, RandomHeroUseFavorite = cosmetics?.RandomHeroUseFavorite ?? false,
             CosmeticCoin = cosmetics?.Coin is int coin && !string.IsNullOrEmpty(NativeMatch.NativeCoinCard(coin)) ? cosmetics.Coin : null, RandomCoinUseFavorite = cosmetics?.RandomCoinUseFavorite ?? true,
-            Type = DeckType.NORMAL_DECK, CardBack = random ?? cosmetics?.CardBack, FormatType = LocalDeckFormat, SortOrder = rank,
+            Type = DeckType.NORMAL_DECK, CardBack = random ?? cosmetics?.CardBack, FormatType =
+#if FULL_COLLECTION
+            FullCollectionCatalog.Ready ? FullCollectionCatalog.DeckFormat(id) :
+#endif
+            LocalDeckFormat, SortOrder = rank,
             SourceType = DeckSourceType.DECK_SOURCE_TYPE_NORMAL, Rune1 = runes[0], Rune2 = runes[1], Rune3 = runes[2],
             Pet = cosmetics?.PetFamily == null ? (int?)null : LocalShop.Default.PetNativeId(cosmetics.PetFamily),
             PetVariant = cosmetics?.PetForm == null ? (int?)null : NativeMatch.NativePetVariant(cosmetics.PetForm),
@@ -364,7 +372,12 @@ internal static partial class NativeUIProbe
     }
 
     private static bool SupportedNativeEnvelope(CollectionDeck deck) => deck != null
-        && deck.Type == DeckType.NORMAL_DECK && deck.FormatType == LocalDeckFormat
+        && deck.Type == DeckType.NORMAL_DECK
+#if FULL_COLLECTION
+        && FullCollectionCatalog.ValidFormat(deck.FormatType)
+#else
+        && deck.FormatType == LocalDeckFormat
+#endif
         && deck.SourceType == DeckSourceType.DECK_SOURCE_TYPE_NORMAL
         && (!deck.HeroOverridden || LocalDecks.PlayerHeroes.Contains(NativeBaseHero(deck)))
         && deck.CreatedFromShareableDeck == null && SupportedSideboards(deck)
@@ -377,7 +390,13 @@ internal static partial class NativeUIProbe
         first != null && second != null && first.ID == second.ID && first.Type == second.Type
         && NativeBaseHero(first) == NativeBaseHero(second)
         && first.NeedsName == second.NeedsName && first.SeasonId == second.SeasonId
-        && first.BrawlLibraryItemId == second.BrawlLibraryItemId && first.FormatType == second.FormatType
+        && first.BrawlLibraryItemId == second.BrawlLibraryItemId
+        && (first.FormatType == second.FormatType
+#if FULL_COLLECTION
+            || FullCollectionCatalog.Ready && FullCollectionCatalog.ValidFormat(first.FormatType)
+                && FullCollectionCatalog.ValidFormat(second.FormatType)
+#endif
+        )
         && first.SourceType == second.SourceType && first.UIHeroOverrideCardID == second.UIHeroOverrideCardID
         && first.UIHeroOverridePremium == second.UIHeroOverridePremium && first.Locked == second.Locked
         && (first.GetRuneOrder().SequenceEqual(second.GetRuneOrder())

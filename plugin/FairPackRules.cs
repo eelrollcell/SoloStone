@@ -315,6 +315,10 @@ internal static class LocalCardPremium
     internal static bool HasDiamond(string id, string meta) => Supports(id, "diamond", meta);
     private static bool Supports(string id, string quality, string meta)
     {
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Contains(id)) return FullCollectionCatalog.Count(id, quality == "diamond" ? 2 : 3) > 0;
+#endif
+
 #if ENGINE_SOURCE
         meta = meta ?? OfflinePoolPolicy.Load().ActiveMetaId;
 #else

@@ -2,6 +2,7 @@
   <Import Project="../data/packs/FairPackResources.props" />
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
+    <DefineConstants Condition="'$(FullCollection)' == 'true'">$(DefineConstants);FULL_COLLECTION</DefineConstants>
     <LangVersion>latest</LangVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
     <AssemblyName>HSNativeUIProbe</AssemblyName>

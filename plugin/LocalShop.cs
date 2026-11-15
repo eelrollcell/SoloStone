@@ -1045,7 +1045,16 @@ public sealed partial class LocalProfile
     // Private dictionaries/sets are built once and never mutated; meta/catalogue cannot reload in this process.
     private static readonly Lazy<Dictionary<string, EngineCard>> ledgerCardIndex = new Lazy<Dictionary<string, EngineCard>>(() =>
         ledgerCards.Value.ToDictionary(card => card.Id, StringComparer.Ordinal));
+#if FULL_COLLECTION
+    private static readonly Lazy<Dictionary<string, EngineCard>> fullLedgerCardIndex = new Lazy<Dictionary<string, EngineCard>>(() => {
+        var index = new Dictionary<string, EngineCard>(ledgerCardIndex.Value, StringComparer.Ordinal);
+        foreach (var pair in FullCollectionCatalog.Cards) index[pair.Key] = pair.Value;
+        return index;
+    });
+    private static Dictionary<string, EngineCard> LedgerCardIndex => FullCollectionCatalog.Ready ? fullLedgerCardIndex.Value : ledgerCardIndex.Value;
+#else
     private static Dictionary<string, EngineCard> LedgerCardIndex => ledgerCardIndex.Value;
+#endif
     internal static bool KnownLedgerCard(string id) => id != null && (LedgerCardIndex.ContainsKey(id) || LocalCoreProgression.IsAvailable(id));
     // Premium receipts must keep loading after a meta change: any collectible definition is a valid sold card.
     private static bool IsCollectibleCard(string id) {

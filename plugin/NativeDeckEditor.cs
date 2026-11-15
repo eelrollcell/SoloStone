@@ -58,7 +58,12 @@ internal static partial class NativeUIProbe
         string hero = NativeUIProjection.CreateRequestHero(heroCardID, LocalShop.Default.HeroSkinClass);
         bool allowed = NativeUIProjection.CanCreateDraft(deckType == DeckType.NORMAL_DECK,
             deckSourceType == DeckSourceType.DECK_SOURCE_TYPE_NORMAL && pastedDeckHashString == null,
-            hero != null && Heroes.Contains(hero), Options.GetFormatType() == LocalDeckFormat,
+            hero != null && Heroes.Contains(hero),
+#if FULL_COLLECTION
+            FullCollectionCatalog.ValidFormat(Options.GetFormatType()),
+#else
+            Options.GetFormatType() == LocalDeckFormat,
+#endif
             Profile.CustomDecks.Count, SessionLoanerKeys().Count());
         if (!NativeUIProjection.OwnsCreateRequest(active, CurrentCollectionScene(), allowed, isHeroOverridden))
             throw new InvalidOperationException("Unsupported local deck creation request.");
@@ -67,6 +72,10 @@ internal static partial class NativeUIProbe
             error => ReportDeckError("create", candidateId, error), out LocalCustomDeck saved)) return false;
         try
         {
+
+#if FULL_COLLECTION
+            if (FullCollectionCatalog.Ready) Profile.SetCollectionFormat(saved.Id, (int)Options.GetFormatType());
+#endif
             decks.Add(saved.Id, LocalProfile.LedgerDeck(saved.Name, saved.Hero, saved.Cards, saved.Sideboards, false));
             var header = ExpectedHeader(saved.Id);
             editedDraftId = saved.Id;

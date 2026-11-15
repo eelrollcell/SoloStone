@@ -74,7 +74,11 @@ internal static class LocalClassRewards
     private static readonly Lazy<HashSet<string>> Available = new Lazy<HashSet<string>>(() =>
         new HashSet<string>(Cards.All.Where(card => card.Implemented && card.Collectible && LocalCardCatalog.InActiveMeta(card))
             .Select(card => card.Id).Concat(Portraits.Select(row => row.Hero).Where(id => Cards.FromId(id) != null)), StringComparer.Ordinal));
-    internal static bool IsAvailable(string id) => id != null && Available.Value.Contains(id);
+    internal static bool IsAvailable(string id) => id != null && (
+#if FULL_COLLECTION
+        FullCollectionCatalog.Contains(id) ||
+#endif
+        Available.Value.Contains(id));
 
     internal static int ProgressionAtLeast(LocalProfileData profile, string id, int premium) => Enumerable.Range(1, 3)
         .Where(version => LocalCrafting.PremiumQuality(version) >= LocalCrafting.PremiumQuality(premium))

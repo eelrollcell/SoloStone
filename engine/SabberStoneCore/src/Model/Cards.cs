@@ -339,6 +339,23 @@ namespace SabberStoneCore.Model
 			return Data.Cards[cardId];
 		}
 
+        // Collection metadata only. The caller must not send these definitions to the battle engine.
+        public static Card RegisterCollectionDefinition(string id, int assetId, string name, IDictionary<int, int> values)
+        {
+            if (string.IsNullOrEmpty(id) || assetId <= 0 || values == null) throw new ArgumentException("Invalid collection definition");
+            var tags = values.Select(pair => new Tag((GameTag)pair.Key, pair.Value)).ToList();
+            tags.Add(new Tag(GameTag.CARDNAME, name ?? id));
+            var card = new Card(id, assetId, tags.ToArray(), new Dictionary<PlayReq, int>(), Array.Empty<string>(), Array.Empty<Tag>(), true);
+            card.Implemented = false;
+            // Keep established engine definitions, including their sideboard and recipe support.
+            if (!Data.Cards.TryGetValue(id, out var existing) || !existing.Implemented)
+            {
+                Data.Cards[id] = card;
+                _assetIndex = null;
+            }
+            return card;
+        }
+
 		/// <summary>
 		/// Returns the first collectible card that matches the provided name.
 		/// 

@@ -79,6 +79,10 @@ public static class LocalCardCatalog
     public static readonly IReadOnlyList<EngineCard> Supported = Array.AsReadOnly(Current.Concat(LocalCoreProgression.AvailableCards).ToArray());
     internal static bool InActiveMeta(EngineCard card)
     {
+#if FULL_COLLECTION
+        if (card != null && FullCollectionCatalog.Contains(card.Id)) return true;
+#endif
+
 #if ENGINE_SOURCE
         return OfflinePoolPolicy.Load().AllowsCard(card);
 #else
@@ -92,6 +96,10 @@ public static class LocalCardCatalog
         .Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToArray());
     internal static bool InActiveMetaSet(int setId)
     {
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready && FullCollectionCatalog.Sets.Contains(setId)) return true;
+#endif
+
 #if ENGINE_SOURCE
         return OfflinePoolPolicy.Load().AllowsSet(setId);
 #else

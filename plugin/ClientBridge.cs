@@ -415,6 +415,9 @@ internal static class ClientBridge
     internal static PreparedLocalMatch PrepareLocalMatch(string deck, string opponent, int seed, int stars, LocalDeck player = null,
         IReadOnlyList<LocalDeckCard> premiumEntries = null)
     {
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready) throw new InvalidOperationException("完整收藏模式仅用于收藏与组卡，不支持对战。");
+#endif
         EnsureCanStart();
         NativeUIProjection.ValidateMatchDeckBinding(deck, player);
         var prepared = player == null
@@ -553,6 +556,10 @@ internal static class ClientBridge
             }
             catch (Exception error) { try { log.LogWarning("match-journal unavailable: " + error.Message); } catch { } }
             StartMatch = match.Start;
+#if FULL_COLLECTION
+            if (FullCollectionCatalog.Ready) StartMatch = () => { throw new InvalidOperationException("Full collection mode supports collection and deck building only."); };
+#endif
+
 #if STANDARD_PROOF
             match.TradeTrace = recordJson => File.AppendAllText(reports + @"\trade-proof.jsonl",
                 StandardProofNative.Envelope(runId,matchId,NativeTestControl.AttributeTrace(recordJson))+"\n");

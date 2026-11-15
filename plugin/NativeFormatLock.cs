@@ -72,6 +72,10 @@ internal static class NativeFormatLock
 
     private static void StandardFormat(ref FormatType __0)
     {
+
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready && FullCollectionCatalog.ValidFormat(__0)) return;
+#endif
         if (!NativeUIProbe.IsolatedLaunch || __0 == FormatType.FT_UNKNOWN || __0 == NativeUIProbe.LocalDeckFormat) return;
         log?.LogInfo("NATIVE_FORMAT options " + __0 + " kept " + NativeUIProbe.LocalDeckFormat);
         __0 = NativeUIProbe.LocalDeckFormat;
@@ -80,6 +84,10 @@ internal static class NativeFormatLock
     private static void StandardMode(ref VisualsFormatType __0)
     {
         if (!NativeUIProbe.IsolatedLaunch) return;
+
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready && __0 == VisualsFormatType.VFT_WILD) return;
+#endif
         if (__0 != VisualsFormatType.VFT_STANDARD && __0 != VisualsFormatType.VFT_CASUAL)
         {
             log?.LogInfo("NATIVE_FORMAT mode " + __0 + " kept VFT_STANDARD");

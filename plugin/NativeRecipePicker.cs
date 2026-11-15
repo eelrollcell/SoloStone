@@ -30,6 +30,10 @@ internal static partial class NativeUIProbe
 
     private static bool LocalRecipeTemplates(FormatType __0, TAG_CLASS __1, ref List<CollectionManager.TemplateDeck> __result)
     {
+
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready) { __result = new List<CollectionManager.TemplateDeck>(); return false; }
+#endif
         if (!active) return true;
         __result = NativeRecipeSafety.OrDefault(() => RecipeTemplates.ForClass(Profile.OwnedRecipes, __0, __1),
             new List<CollectionManager.TemplateDeck>(), LogRecipeFailure);
@@ -38,6 +42,10 @@ internal static partial class NativeUIProbe
 
     private static void DecorateLocalRecipes(DeckTemplatePicker __instance, FormatType __0, TAG_CLASS __1)
     {
+
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready) return;
+#endif
         if (!active) return;
         NativeRecipeSafety.OrDefault(() => {
             var draft = Profile.GetDraft(CollectionManager.Get()?.GetEditedDeck()?.ID ?? 0);
@@ -239,6 +247,9 @@ internal static partial class NativeUIProbe
 
     private static DeckRecipe FindCurrentRecipeGuide(CollectionManagerDisplay display)
     {
+#if FULL_COLLECTION
+        if (FullCollectionCatalog.Ready) return null;
+#endif
         if (!active || !CurrentCollectionScene() || !ReferenceEquals(CollectionManager.Get()?.GetCollectibleDisplay(), display)) return null;
         if (display.GetViewMode() == CollectionUtils.ViewMode.DECK_TEMPLATE)
         {

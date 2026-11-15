@@ -218,6 +218,9 @@ internal static class NativeUIProjection
     // entry for each id. Cards outside it exist natively only once owned (from the collection packet) and only in the
     // owned version, so they never list as missing and CanUpgradeCardToGolden answers NotUpgradable.
     internal static List<string> NativeCollectiblePool(IEnumerable<string> craftable, IEnumerable<LocalCardCount> owned = null) => Supported.Concat(CosmeticHeroPool)
+#if FULL_COLLECTION
+        .Concat(FullCollectionCatalog.Cards.Keys)
+#endif
         .Concat(craftable ?? Enumerable.Empty<string>()).Concat(OwnedGrantOnlyIds(owned))
         .Distinct(StringComparer.Ordinal).OrderBy(id => id).ToList();
     private static bool AdmittedGrantOnly(string id) => LocalWelcomeGift.HistoricalCardIds.Contains(id)
@@ -227,6 +230,10 @@ internal static class NativeUIProjection
     // Deck-slot collectibility: native EvaluateSlot checks it before ownership, so narrowing it turns missing cards
     // (blue ghosts) into invalid ones. Keep the historical predicate and only add owned admitted grants.
     internal static bool IsNativeCollectible(string id, LocalProfile profile) =>
+
+#if FULL_COLLECTION
+        FullCollectionCatalog.Contains(id) ||
+#endif
         Supported.Contains(id) || LocalDecks.TestStandardCardIds.Contains(id) || CosmeticHeroPool.Contains(id)
         || (AdmittedGrantOnly(id) && profile.TotalOwnedCount(id) > 0);
     internal static readonly HashSet<string> Supported = new HashSet<string>(LocalEconomy.Catalog.Select(c => c.Id)
@@ -1091,7 +1098,11 @@ internal static class NativeUIProjection
         return null;
     }
     // SoloStone plays Standard ranked and Standard Casual (#37): every other picker mode stays visible but disabled.
-    internal static bool IsDisabledFormatMode(string mode) => mode != null && mode != "STANDARD" && mode != "CASUAL";
+    internal static bool IsDisabledFormatMode(string mode) => mode != null && mode != "STANDARD" && mode != "CASUAL"
+#if FULL_COLLECTION
+        && mode != "WILD"
+#endif
+        ;
     // The native picker's Standard/Casual choice (NativeFormatLock.StandardMode keeps it; boot restores the save's
     // LocalProfile.PrefersCasual). IN_RANKED_PLAY_MODE reads its inverse, so the client renders Casual natively.
     internal static bool CasualPlayMode;
